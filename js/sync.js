@@ -58,10 +58,14 @@ const CloudSync = (() => {
   }
 
   // On sign-in: pull cloud library then push any local-only items
+  // On sign-out: clear local library so it doesn't show another user's data
   Auth.onChange(async (user, event) => {
     if (user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
       await pull();
       await pushAll();
+    } else if (!user && event === 'SIGNED_OUT') {
+      localStorage.removeItem('amal_library');
+      window.dispatchEvent(new CustomEvent('amal:synced'));
     }
   });
 
