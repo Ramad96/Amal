@@ -2,6 +2,8 @@
    Amal — Core App
 ================================ */
 
+window.AMAL_VERSION = 'v6';
+
 // Register service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

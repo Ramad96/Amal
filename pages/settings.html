@@ -54,6 +54,7 @@
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       Visit Support
     </a>
+    <p class="text-subtle text-sm" style="margin-top:1rem;" id="version-label"></p>
   </div>
 </main>
 
@@ -150,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.theme-btn').forEach(function(btn) {
     btn.classList.toggle('active', btn.dataset.theme === current);
   });
+  document.getElementById('version-label').textContent = 'Amal ' + (window.AMAL_VERSION || '');
 });
 </script>
 </body>
