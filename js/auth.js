@@ -34,6 +34,8 @@ const Auth = (() => {
   }
 
   async function signOut() {
+    localStorage.removeItem('amal_library');
+    window.dispatchEvent(new CustomEvent('amal:synced'));
     await window._supabase.auth.signOut();
     showToast('Signed out');
   }
