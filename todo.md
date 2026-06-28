@@ -16,39 +16,39 @@
 ## Phase 1 — Foundation
 - [x] Project structure set up
 - [x] CNAME file for amal.amanahdigital.co.uk
-- [ ] index.html shell with navigation
-- [ ] Global CSS (design tokens, typography, components)
-- [ ] PWA manifest (manifest.json)
-- [ ] Service worker (sw.js) for offline caching
+- [x] index.html shell with navigation
+- [x] Global CSS (design tokens, typography, components)
+- [x] PWA manifest (manifest.json)
+- [x] Service worker (sw.js) for offline caching
 - [ ] Favicon + app icons
 
 ---
 
 ## Phase 2 — Prophetic Duas
-- [ ] duas.json — curated dataset (~60 duas) with:
+- [x] duas.json — curated dataset with:
   - Arabic text
   - Transliteration
   - English translation
   - Source (Quran ref or hadith)
   - Category tags
-- [ ] Browse duas by category page
-- [ ] Individual dua view (full Arabic, transliteration, translation)
-- [ ] Search duas by keyword
+- [x] Browse duas by category page
+- [x] Individual dua view (full Arabic, transliteration, translation)
+- [x] Search duas by keyword
 
 ---
 
 ## Phase 3 — Personal Library
-- [ ] Save any dua to personal library (localStorage)
-- [ ] Add a custom dua (user-written)
+- [x] Save any dua to personal library (localStorage)
+- [x] Add a custom dua (user-written)
 - [ ] Tag duas (optional free tags)
-- [ ] Mark dua as answered (with timestamp)
-- [ ] View answered duas archive
-- [ ] Delete / edit personal duas
+- [x] Mark dua as answered (with timestamp)
+- [x] View answered duas archive
+- [x] Delete / edit personal duas
 
 ---
 
 ## Phase 4 — Categories & Discovery
-- [ ] Category index page
+- [x] Category index page
   - Morning & evening adhkar
   - Travelling
   - Anxiety & hardship
@@ -57,38 +57,27 @@
   - Before/after eating
   - Seeking forgiveness
   - Dua for others
-- [ ] Filter prophetic duas by category
-- [ ] "Dua of the day" on homepage (rotates daily)
+- [x] Filter prophetic duas by category
+- [x] "Dua of the day" on homepage (rotates daily)
 
 ---
 
 ## Phase 5 — Umrah Sharing
-- [ ] Create a dua request (text input, optional name)
-- [ ] Generate a unique shareable link (UUID-based URL hash)
-- [ ] Pilgrim view — clean, distraction-free page showing all requests sent to that link
-- [ ] Share via WhatsApp / copy link button
-- [ ] Requests stored in localStorage on sender's device (no backend needed)
+- [x] Create a dua request (text input, optional name)
+- [x] Generate a unique shareable link (UUID-based URL hash)
+- [x] Pilgrim view — clean, distraction-free page showing all requests sent to that link
+- [x] Share via WhatsApp / copy link button
+- [x] Requests stored in localStorage on sender's device (no backend needed)
 
 ---
 
-## Phase 6 — Open Dua Board
-- [ ] Decide on moderation approach before building
-  - Option A: localStorage only (private board, no server)
-  - Option B: Simple backend (Supabase free tier) for shared board
-- [ ] Post a dua request (anonymous or with name)
-- [ ] "Ameen" tap counter per post
-- [ ] Board view (chronological, most recent first)
-- [ ] Basic content guidelines shown before posting
-
----
-
-## Phase 7 — Polish
+## Phase 6 — Polish
 - [ ] Responsive design (mobile-first)
 - [ ] Dark mode support
 - [ ] Smooth page transitions
 - [ ] Empty states (no saved duas yet, etc.)
 - [ ] Onboarding / welcome screen for first-time visitors
-- [ ] About page (what is Amal, who made it)
+- [x] About page (what is Amal, who made it)
 - [ ] Footer with link back to amanahdigital.co.uk
 
 ---
@@ -129,3 +118,16 @@ Amal/
     ├── icon-192.png
     └── icon-512.png
 ```
+
+---
+
+## Later — Open Dua Board (post-launch)
+> Not included in v1. Requires a decision on moderation and potentially a backend. Build after core features are stable.
+
+- [ ] Decide on moderation approach before building
+  - Option A: localStorage only (private board, no server)
+  - Option B: Simple backend (Supabase free tier) for shared board
+- [ ] Post a dua request (anonymous or with name)
+- [ ] "Ameen" tap counter per post
+- [ ] Board view (chronological, most recent first)
+- [ ] Basic content guidelines shown before posting

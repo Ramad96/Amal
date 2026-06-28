@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browse Duas — Amal</title>
+  <title>Settings — Amal</title>
   <meta name="theme-color" content="#A0601A">
   <link rel="manifest" href="../manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,18 +16,38 @@
 
 <main class="page">
   <div class="page-header">
-    <h1>Browse Duas</h1>
-    <p>Supplications from the Quran and Sunnah</p>
+    <h1>Settings</h1>
+    <p>Personalise your Amal experience.</p>
   </div>
 
-  <div class="search-wrap">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="search" id="search" placeholder="Search duas…">
+  <div class="card">
+    <h3 style="margin-bottom:0.4rem;">Appearance</h3>
+    <p class="text-sm text-muted" style="margin-bottom:1rem;">Choose how Amal looks on your device.</p>
+    <div class="theme-picker">
+      <button class="theme-btn" data-theme="light" onclick="setTheme('light')">
+        <span class="theme-icon">☀️</span>
+        <span>Light</span>
+      </button>
+      <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')">
+        <span class="theme-icon">🌙</span>
+        <span>Dark</span>
+      </button>
+      <button class="theme-btn" data-theme="device" onclick="setTheme('device')">
+        <span class="theme-icon">⚙️</span>
+        <span>Device</span>
+      </button>
+    </div>
+    <p class="text-subtle text-sm" style="margin-top:0.75rem;">Device follows your OS light/dark preference.</p>
   </div>
 
-  <div class="chips" id="chips"></div>
-
-  <div id="list"></div>
+  <div class="card mt-2">
+    <h3 style="margin-bottom:0.4rem;">Support</h3>
+    <p class="text-sm text-muted" style="margin-bottom:1rem;">Have a question, found a bug, or want to share feedback? We'd love to hear from you.</p>
+    <a href="https://support.amanahdigital.co.uk" class="btn" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Visit Support
+    </a>
+  </div>
 </main>
 
 <footer>
@@ -44,7 +64,7 @@
     <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
     My Library
   </a>
-  <a href="browse.html" class="active">
+  <a href="browse.html">
     <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
     Browse
   </a>
@@ -52,7 +72,7 @@
     <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
     Sharing
   </a>
-  <a href="settings.html">
+  <a href="settings.html" class="active">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
     Settings
   </a>
@@ -61,55 +81,26 @@
 <div id="toast"></div>
 
 <script src="../js/app.js"></script>
-<script src="../js/library.js"></script>
 <script>
-let allDuas = [];
-let activeCategory = 'all';
-let query = '';
+function setTheme(theme) {
+  if (theme === 'device') {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.removeItem('amal_theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('amal_theme', theme);
+  }
+  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+}
 
-document.addEventListener('DOMContentLoaded', async () => {
-  allDuas = await loadDuas();
-  renderChips();
-  render();
-
-  document.getElementById('search').addEventListener('input', e => {
-    query = e.target.value.toLowerCase();
-    render();
+document.addEventListener('DOMContentLoaded', function() {
+  var current = localStorage.getItem('amal_theme') || 'device';
+  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.theme === current);
   });
 });
-
-function renderChips() {
-  const cats = ['all', ...Object.keys(CATEGORIES)];
-  const used = new Set(allDuas.flatMap(d => d.categories));
-  const visible = cats.filter(c => c === 'all' || used.has(c));
-  document.getElementById('chips').innerHTML = visible.map(c => {
-    const label = c === 'all' ? 'All' : (CATEGORIES[c]?.label || c);
-    return `<button class="chip ${c === activeCategory ? 'active' : ''}" onclick="filterCat('${c}')">${label}</button>`;
-  }).join('');
-}
-
-function filterCat(cat) {
-  activeCategory = cat;
-  renderChips();
-  render();
-}
-
-function render() {
-  let duas = allDuas;
-  if (activeCategory !== 'all') duas = duas.filter(d => d.categories?.includes(activeCategory));
-  if (query) duas = duas.filter(d =>
-    d.translation.toLowerCase().includes(query) ||
-    d.transliteration.toLowerCase().includes(query) ||
-    d.occasion?.toLowerCase().includes(query)
-  );
-
-  if (!duas.length) {
-    document.getElementById('list').innerHTML = `<div class="empty"><h3>No duas found</h3><p>Try a different search or category.</p></div>`;
-    return;
-  }
-
-  document.getElementById('list').innerHTML = duas.map(d => renderDuaCard(d)).join('');
-}
 </script>
 </body>
 </html>

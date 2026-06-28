@@ -1,17 +1,17 @@
-const CACHE = 'amal-v1';
+const CACHE = 'amal-v5';
 const ASSETS = [
   '/',
   '/index.html',
   '/css/style.css',
   '/js/app.js',
+  '/js/theme.js',
   '/js/library.js',
   '/js/sharing.js',
-  '/js/board.js',
   '/data/duas.json',
   '/pages/browse.html',
   '/pages/library.html',
   '/pages/share.html',
-  '/pages/board.html',
+  '/pages/settings.html',
   '/pages/about.html',
   '/manifest.json'
 ];
