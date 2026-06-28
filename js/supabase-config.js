@@ -69,6 +69,16 @@
     using (exists (select 1 from sharing_lists where id = list_id and user_id = auth.uid()));
   create policy "List owner deletes requests"    on sharing_requests for delete
     using (exists (select 1 from sharing_lists where id = list_id and user_id = auth.uid()));
+
+  -- Table-level grants (required for anon/authenticated roles when creating via SQL editor)
+  grant select on sharing_lists to anon, authenticated;
+  grant insert on sharing_lists to authenticated;
+  grant update on sharing_lists to authenticated;
+  grant delete on sharing_lists to authenticated;
+  grant select on sharing_requests to anon, authenticated;
+  grant insert on sharing_requests to anon, authenticated;
+  grant update on sharing_requests to authenticated;
+  grant delete on sharing_requests to authenticated;
   ──────────────────────────────────────────────────────────────────
 */
 

@@ -22,7 +22,7 @@ const Sharing = (() => {
   async function getList(id) {
     const { data: list, error } = await window._supabase
       .from(LISTS).select('*').eq('id', id).single();
-    if (error || !list) return null;
+    if (error || !list) { if (error) console.error('getList error:', error); return null; }
     const { data: requests } = await window._supabase
       .from(REQS).select('*').eq('list_id', id).order('created_at', { ascending: true });
     return { ...list, requests: requests || [] };
