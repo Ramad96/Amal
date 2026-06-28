@@ -17,10 +17,10 @@
       border: 1px solid var(--accent);
       border-radius: var(--radius);
       padding: 0.85rem 1rem;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       word-break: break-all;
       color: var(--accent-text);
-      font-family: var(--font-ui);
+      font-family: var(--font-mono);
       margin: 0.75rem 0;
     }
   </style>
@@ -30,20 +30,13 @@
 <main class="page">
   <div class="page-header">
     <h1>Umrah Sharing</h1>
-    <p>Going on Umrah or Hajj? Create a link so loved ones can send you duas to make on their behalf.</p>
+    <p>Going on Umrah or Hajj? Create a link so loved ones can send you duas to carry.</p>
   </div>
 
-  <!-- Create new list -->
   <div class="card" id="create-section">
-    <h3 style="margin-bottom:0.75rem;">Create a sharing link</h3>
-    <div class="field">
-      <label>Label (optional)</label>
-      <input type="text" id="list-label" placeholder="e.g. Adam's Umrah — March 2025">
-    </div>
-    <button class="btn btn-primary" onclick="createList()">Generate link</button>
+    <p class="text-sm text-muted">Loading…</p>
   </div>
 
-  <!-- My existing lists -->
   <div id="my-lists"></div>
 </main>
 
@@ -73,60 +66,128 @@
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
     Settings
   </a>
+  <button id="nav-auth-btn" class="nav-auth"></button>
 </nav>
 
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabase-config.js"></script>
 <script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
 <script src="../js/sharing.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', renderMyLists);
-
-function createList() {
-  const label = document.getElementById('list-label').value.trim();
-  const id = Sharing.createList(label);
-  document.getElementById('list-label').value = '';
-  renderMyLists();
-  showToast('Link created!');
-  // Scroll to the new list
-  setTimeout(() => document.getElementById('list-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function renderMyLists() {
-  const lists = Sharing.getMyLists();
+let shareFilter = 'all';
+
+Auth.onChange(async (user) => {
+  renderCreateSection(user);
+  if (user) {
+    await renderMyLists();
+  } else {
+    document.getElementById('my-lists').innerHTML = '';
+  }
+});
+
+function renderCreateSection(user) {
+  const el = document.getElementById('create-section');
+  if (!user) {
+    el.innerHTML = `
+      <h3 style="margin-bottom:0.5rem;">Create a sharing link</h3>
+      <p class="text-sm text-muted" style="margin-bottom:1rem;">Sign in to generate a link for your Umrah or Hajj.</p>
+      <button class="btn" onclick="Auth.signIn()" style="display:inline-flex;align-items:center;gap:0.5rem;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Sign in with Google
+      </button>`;
+  } else {
+    el.innerHTML = `
+      <h3 style="margin-bottom:0.75rem;">Create a sharing link</h3>
+      <div class="field">
+        <label>Label (optional)</label>
+        <input type="text" id="list-label" placeholder="e.g. Adam's Umrah — March 2025">
+      </div>
+      <button class="btn btn-primary" onclick="createList()">Generate link</button>`;
+  }
+}
+
+async function createList() {
+  const label = document.getElementById('list-label')?.value.trim();
+  const id = await Sharing.createList(label);
+  if (!id) return;
+  document.getElementById('list-label').value = '';
+  showToast('Link created!');
+  await renderMyLists();
+  setTimeout(() => document.getElementById('list-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+}
+
+async function renderMyLists() {
   const el = document.getElementById('my-lists');
+  const lists = await Sharing.getMyLists();
   if (!lists.length) { el.innerHTML = ''; return; }
 
-  el.innerHTML = `<h3 style="margin:1.5rem 0 0.75rem;font-size:1rem;font-weight:500;">Your sharing links</h3>` +
-    lists.map(list => {
+  const filtered = shareFilter === 'all' ? lists : lists.filter(l => l.status === shareFilter);
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:1.5rem 0 0.75rem;flex-wrap:wrap;gap:0.5rem;">
+      <h3 style="font-size:1rem;font-weight:500;">Your sharing links</h3>
+      <div class="chips" style="margin:0;">
+        <button class="chip ${shareFilter==='all'?'active':''}" onclick="setFilter('all')">All</button>
+        <button class="chip ${shareFilter==='open'?'active':''}" onclick="setFilter('open')">Open</button>
+        <button class="chip ${shareFilter==='closed'?'active':''}" onclick="setFilter('closed')">Closed</button>
+      </div>
+    </div>
+    ${filtered.length ? filtered.map(list => {
       const url = Sharing.getShareUrl(list.id);
-      const count = list.requests.length;
+      const active = list.requests.filter(r => !r.dismissed);
+      const count = active.length;
+      const isOpen = list.status === 'open';
       return `
         <div class="card" id="list-${list.id}">
           <div class="flex justify-between items-center">
             <div>
-              <p style="font-weight:500;font-size:0.95rem;">${list.label}</p>
+              <p style="font-weight:500;font-size:0.95rem;">${esc(list.label)}</p>
               <p class="text-sm text-muted mt-1">${count} dua request${count !== 1 ? 's' : ''}</p>
             </div>
-            <button class="btn btn-ghost text-sm" onclick="deleteList('${list.id}')">Delete</button>
+            <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+              <span class="tag ${isOpen ? '' : 'muted'}">${isOpen ? 'Open' : 'Closed'}</span>
+              <button class="btn btn-ghost text-sm" onclick="deleteList('${list.id}')">Delete</button>
+            </div>
           </div>
           <div class="share-link-box">${url}</div>
           <div class="flex gap-1" style="flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="copyLink('${url}')">Copy link</button>
-            <a href="${url}" class="btn" target="_blank">View requests</a>
-            <button class="btn btn-ghost" onclick="shareWhatsApp('${url}', '${list.label}')">Share via WhatsApp</button>
+            <button class="btn btn-primary" onclick="copyLink('${esc(url)}')">Copy link</button>
+            <a href="${esc(url)}" class="btn">View requests</a>
+            <button class="btn btn-ghost" onclick="toggleStatus('${list.id}','${list.status}')">${isOpen ? 'Close link' : 'Reopen link'}</button>
+            <button class="btn btn-ghost" onclick="shareWhatsApp('${esc(url)}','${esc(list.label)}')">WhatsApp</button>
           </div>
-          ${count > 0 ? `
-          <hr class="divider">
-          <p class="text-sm text-muted mb-1">Recent requests:</p>
-          ${list.requests.slice(0, 3).map(r => `
-            <div style="padding:0.5rem 0;border-bottom:1px solid var(--border);font-size:0.88rem;">
-              <strong>${r.name}</strong>: ${r.dua}
-            </div>`).join('')}
-          ${count > 3 ? `<p class="text-subtle text-sm mt-1">+ ${count - 3} more — <a href="${url}" style="color:var(--accent);">view all</a></p>` : ''}
-          ` : ''}
         </div>`;
-    }).join('');
+    }).join('') : `<p class="text-muted text-sm">No ${shareFilter === 'all' ? '' : shareFilter + ' '}links.</p>`}`;
+}
+
+function setFilter(f) {
+  shareFilter = f;
+  renderMyLists();
+}
+
+async function toggleStatus(listId, currentStatus) {
+  await Sharing.toggleStatus(listId, currentStatus);
+  showToast(currentStatus === 'open' ? 'Link closed' : 'Link reopened');
+  await renderMyLists();
+}
+
+async function deleteList(id) {
+  if (!confirm('Delete this sharing link? All requests will also be deleted.')) return;
+  await Sharing.deleteList(id);
+  showToast('Link deleted');
+  await renderMyLists();
 }
 
 function copyLink(url) {
@@ -136,13 +197,6 @@ function copyLink(url) {
 function shareWhatsApp(url, label) {
   const msg = `Assalamu alaikum! I'm going on Umrah. Please send me your duas and I'll make them on your behalf in sha Allah 🤲\n\n${url}`;
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
-}
-
-function deleteList(id) {
-  if (!confirm('Delete this sharing link? This cannot be undone.')) return;
-  Sharing.deleteList(id);
-  renderMyLists();
-  showToast('Link deleted');
 }
 </script>
 </body>

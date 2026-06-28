@@ -15,9 +15,10 @@
      Site URL: https://amal.amanahdigital.co.uk
      Redirect URLs: https://amal.amanahdigital.co.uk/*
 
-  4. Create the database table — run this in Supabase → SQL Editor:
+  4. Create the database tables — run this in Supabase → SQL Editor:
 
   ──────────────────────────────────────────────────────────────────
+  -- User library
   create table if not exists user_library (
     id          uuid primary key default gen_random_uuid(),
     user_id     uuid references auth.users(id) on delete cascade not null,
@@ -35,6 +36,39 @@
     on user_library for all
     using  (auth.uid() = user_id)
     with check (auth.uid() = user_id);
+
+  -- Umrah sharing lists
+  create table if not exists sharing_lists (
+    id         uuid primary key default gen_random_uuid(),
+    user_id    uuid references auth.users(id) on delete cascade not null,
+    label      text not null default 'My Umrah Duas',
+    status     text not null default 'open',
+    created_at timestamptz default now()
+  );
+  alter table sharing_lists enable row level security;
+  create policy "Anyone reads sharing lists"  on sharing_lists for select using (true);
+  create policy "Users create sharing lists"  on sharing_lists for insert with check (auth.uid() = user_id);
+  create policy "Users update sharing lists"  on sharing_lists for update using (auth.uid() = user_id);
+  create policy "Users delete sharing lists"  on sharing_lists for delete using (auth.uid() = user_id);
+
+  -- Dua requests sent to a sharing list
+  create table if not exists sharing_requests (
+    id         uuid primary key default gen_random_uuid(),
+    list_id    uuid references sharing_lists(id) on delete cascade not null,
+    name       text not null default 'Anonymous',
+    dua        text not null,
+    dismissed  boolean default false,
+    saved      boolean default false,
+    created_at timestamptz default now()
+  );
+  alter table sharing_requests enable row level security;
+  create policy "Anyone reads sharing requests"  on sharing_requests for select using (true);
+  create policy "Anyone submits to open lists"   on sharing_requests for insert
+    with check (exists (select 1 from sharing_lists where id = list_id and status = 'open'));
+  create policy "List owner updates requests"    on sharing_requests for update
+    using (exists (select 1 from sharing_lists where id = list_id and user_id = auth.uid()));
+  create policy "List owner deletes requests"    on sharing_requests for delete
+    using (exists (select 1 from sharing_lists where id = list_id and user_id = auth.uid()));
   ──────────────────────────────────────────────────────────────────
 */
 

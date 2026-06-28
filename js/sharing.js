@@ -1,43 +1,69 @@
 /* ================================
-   Amal — Umrah Sharing
-   localStorage keys:
-     amal_share_[uuid]  → { id, requests: [{ name, dua, createdAt }], createdAt, label }
-     amal_my_shares     → [uuid, ...]
+   Amal — Umrah Sharing (Supabase)
 ================================ */
 
 const Sharing = (() => {
-  const MY_KEY = 'amal_my_shares';
+  const LISTS = 'sharing_lists';
+  const REQS  = 'sharing_requests';
 
-  function createList(label = '') {
-    const id = uuid();
-    const data = { id, label: label || 'My Umrah Duas', requests: [], createdAt: Date.now() };
-    localStorage.setItem('amal_share_' + id, JSON.stringify(data));
-    const mine = getMyIds();
-    mine.unshift(id);
-    localStorage.setItem(MY_KEY, JSON.stringify(mine));
-    return id;
+  function uid() { return window.Auth?.getUser()?.id ?? null; }
+
+  async function createList(label) {
+    const userId = uid();
+    if (!userId) { showToast('Sign in to create a sharing link'); return null; }
+    const { data, error } = await window._supabase
+      .from(LISTS)
+      .insert({ user_id: userId, label: label || 'My Umrah Duas' })
+      .select('id').single();
+    if (error) { showToast('Could not create link — please try again'); return null; }
+    return data.id;
   }
 
-  function getList(id) {
-    try { return JSON.parse(localStorage.getItem('amal_share_' + id)); }
-    catch { return null; }
+  async function getList(id) {
+    const { data: list, error } = await window._supabase
+      .from(LISTS).select('*').eq('id', id).single();
+    if (error || !list) return null;
+    const { data: requests } = await window._supabase
+      .from(REQS).select('*').eq('list_id', id).order('created_at', { ascending: true });
+    return { ...list, requests: requests || [] };
   }
 
-  function getMyIds() {
-    try { return JSON.parse(localStorage.getItem(MY_KEY)) || []; }
-    catch { return []; }
+  async function getMyLists() {
+    const userId = uid();
+    if (!userId) return [];
+    const { data: lists } = await window._supabase
+      .from(LISTS).select('*').eq('user_id', userId).order('created_at', { ascending: false });
+    if (!lists?.length) return [];
+    const { data: requests } = await window._supabase
+      .from(REQS).select('*').in('list_id', lists.map(l => l.id));
+    return lists.map(l => ({
+      ...l,
+      requests: (requests || []).filter(r => r.list_id === l.id)
+    }));
   }
 
-  function getMyLists() {
-    return getMyIds().map(id => getList(id)).filter(Boolean);
+  async function addRequest(listId, name, dua) {
+    const { error } = await window._supabase
+      .from(REQS).insert({ list_id: listId, name: name || 'Anonymous', dua });
+    return !error;
   }
 
-  function addRequest(listId, name, dua) {
-    const data = getList(listId);
-    if (!data) return false;
-    data.requests.push({ name: name || 'Anonymous', dua, createdAt: Date.now() });
-    localStorage.setItem('amal_share_' + listId, JSON.stringify(data));
-    return true;
+  async function dismissRequest(requestId) {
+    await window._supabase.from(REQS).update({ dismissed: true }).eq('id', requestId);
+  }
+
+  async function markSaved(requestId) {
+    await window._supabase.from(REQS).update({ saved: true }).eq('id', requestId);
+  }
+
+  async function toggleStatus(listId, currentStatus) {
+    const next = currentStatus === 'open' ? 'closed' : 'open';
+    await window._supabase.from(LISTS).update({ status: next }).eq('id', listId);
+    return next;
+  }
+
+  async function deleteList(id) {
+    await window._supabase.from(LISTS).delete().eq('id', id);
   }
 
   function getShareUrl(id) {
@@ -45,20 +71,7 @@ const Sharing = (() => {
     return dir + 'share-view.html?id=' + id;
   }
 
-  function dismissRequest(listId, idx) {
-    const data = getList(listId);
-    if (!data || !data.requests[idx]) return;
-    data.requests[idx].dismissed = true;
-    localStorage.setItem('amal_share_' + listId, JSON.stringify(data));
-  }
-
-  function deleteList(id) {
-    localStorage.removeItem('amal_share_' + id);
-    const mine = getMyIds().filter(i => i !== id);
-    localStorage.setItem(MY_KEY, JSON.stringify(mine));
-  }
-
-  return { createList, getList, getMyIds, getMyLists, addRequest, getShareUrl, dismissRequest, deleteList };
+  return { createList, getList, getMyLists, addRequest, dismissRequest, markSaved, toggleStatus, deleteList, getShareUrl };
 })();
 
 window.Sharing = Sharing;

@@ -18,6 +18,8 @@
     .requester-name { font-weight:500; font-size:0.95rem; }
     .request-dua { color:var(--text-muted); font-size:0.9rem; margin-top:0.3rem; line-height:1.6; }
     .request-actions { display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap; }
+    .confirm-msg { text-align:center; padding:1.5rem; background:var(--accent-light); border:1px solid var(--border-gold); border-radius:var(--radius-lg); margin-bottom:1rem; }
+    .confirm-msg p { color:var(--accent-text); }
   </style>
 </head>
 <body>
@@ -25,28 +27,15 @@
 <main class="page">
   <div class="pilgrim-hero">
     <span class="kaaba-icon">🕋</span>
-    <h1 id="list-title">Dua Requests</h1>
-    <p id="list-sub" class="text-muted">Loading…</p>
+    <h1 id="list-title">Loading…</h1>
+    <p id="list-sub" class="text-muted"></p>
   </div>
 
-  <!-- Add a request form (hidden for owner) -->
-  <div class="card" id="request-form">
-    <h3 style="margin-bottom:0.75rem;">Send a dua request</h3>
-    <div class="field">
-      <label>Your name (optional)</label>
-      <input type="text" id="req-name" placeholder="Anonymous">
-    </div>
-    <div class="field">
-      <label>Your dua request</label>
-      <textarea id="req-dua" placeholder="e.g. Please make dua for my mother's health…"></textarea>
-    </div>
-    <button class="btn btn-primary" onclick="submitRequest()">Send request 🤲</button>
-  </div>
+  <div id="submit-area"></div>
 
-  <hr class="divider">
+  <hr class="divider" id="divider" style="display:none;">
 
   <div id="requests-list"></div>
-
 </main>
 
 <footer>
@@ -67,7 +56,7 @@
     <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
     Browse
   </a>
-  <a href="share.html" class="active">
+  <a href="share.html">
     <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
     Sharing
   </a>
@@ -88,96 +77,141 @@
 <script src="../js/library.js"></script>
 <script src="../js/sharing.js"></script>
 <script>
-let listId = null;
-let isOwner = false;
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-document.addEventListener('DOMContentLoaded', () => {
+let listId = null;
+let listData = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(location.search);
   listId = params.get('id');
-  if (!listId) {
-    document.getElementById('list-title').textContent = 'Link not found';
-    document.getElementById('list-sub').textContent = 'This sharing link is invalid.';
-    document.getElementById('request-form').style.display = 'none';
-    return;
-  }
-  isOwner = Sharing.getMyIds().includes(listId);
-  if (isOwner) document.getElementById('request-form').style.display = 'none';
+  if (!listId) { renderNotFound(); return; }
+  listData = await Sharing.getList(listId);
   render();
 });
 
+// Re-render when auth resolves so owner actions appear without a page refresh
+Auth.onChange(() => { if (listData) render(); });
+
 function render() {
-  const list = Sharing.getList(listId);
-  if (!list) {
-    document.getElementById('list-title').textContent = 'Link not found';
-    document.getElementById('list-sub').textContent = 'This link may have been deleted or hasn\'t been set up yet.';
-    document.getElementById('request-form').style.display = 'none';
-    return;
-  }
+  if (!listData) { renderNotFound(); return; }
 
-  document.title = list.label + ' — Amal';
-  document.getElementById('list-title').textContent = list.label;
+  const isOwner = listData.user_id === Auth.getUser()?.id;
+  const isClosed = listData.status === 'closed';
+  const active = listData.requests.filter(r => !r.dismissed);
 
-  const active = list.requests.filter(r => !r.dismissed);
+  document.title = listData.label + ' — Amal';
+  document.getElementById('list-title').textContent = listData.label;
   document.getElementById('list-sub').textContent = active.length
     ? `${active.length} dua request${active.length !== 1 ? 's' : ''} waiting`
-    : isOwner ? 'No requests yet — share your link to receive duas' : 'No requests yet — be the first to send one';
+    : isOwner ? 'No requests yet — share your link to receive duas'
+               : 'No requests yet — be the first to send one';
 
-  const el = document.getElementById('requests-list');
-  if (!active.length) { el.innerHTML = ''; return; }
+  // Submit area
+  const submitEl = document.getElementById('submit-area');
+  if (isOwner) {
+    submitEl.innerHTML = '';
+  } else if (isClosed) {
+    submitEl.innerHTML = `
+      <div class="card" style="text-align:center;padding:1.5rem;">
+        <p style="font-size:1.3rem;margin-bottom:0.5rem;">🕌</p>
+        <p class="text-muted text-sm">This sharing link is closed — no new requests are being accepted right now.</p>
+      </div>`;
+  } else {
+    submitEl.innerHTML = `
+      <div class="card" id="request-form">
+        <h3 style="margin-bottom:0.75rem;">Send a dua request</h3>
+        <div class="field">
+          <label>Your name (optional)</label>
+          <input type="text" id="req-name" placeholder="Anonymous">
+        </div>
+        <div class="field">
+          <label>Your dua request</label>
+          <textarea id="req-dua" placeholder="e.g. Please make dua for my mother's health…"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="submitRequest()">Send request 🤲</button>
+      </div>`;
+  }
 
-  el.innerHTML = (isOwner ? `<p class="text-muted text-sm mb-2" style="font-weight:500;">Tap a request to save it to your library</p>` : `<p class="text-muted text-sm mb-2" style="font-weight:500;">All requests (${active.length})</p>`) +
-    active.map((r, visualIdx) => {
-      const realIdx = list.requests.indexOf(r);
-      const alreadySaved = Library.list().some(d => d.fromSharing && d.custom_text === r.dua && d.label === r.name);
+  // Requests list
+  const listEl = document.getElementById('requests-list');
+  document.getElementById('divider').style.display = (active.length || isOwner) ? '' : 'none';
+
+  if (!active.length) { listEl.innerHTML = ''; return; }
+
+  listEl.innerHTML = (isOwner
+    ? `<p class="text-muted text-sm mb-2" style="font-weight:500;">Tap Save to add a request to your library</p>`
+    : `<p class="text-muted text-sm mb-2" style="font-weight:500;">All requests (${active.length})</p>`) +
+    active.map(r => {
+      const alreadySaved = r.saved || Library.list().some(d => d.fromSharing && d.custom_text === r.dua);
       const actions = isOwner ? `
         <div class="request-actions">
           ${alreadySaved
-            ? `<span class="tag" style="padding:0.4rem 0.9rem;">✓ Saved</span>`
-            : `<button class="btn btn-primary" style="font-size:0.85rem;padding:0.4rem 0.9rem;" onclick="saveRequest(${realIdx})">Save to library</button>`}
-          <button class="btn btn-ghost" style="font-size:0.85rem;padding:0.4rem 0.9rem;" onclick="dismissReq(${realIdx})">Dismiss</button>
+            ? `<span class="tag">✓ Saved to library</span>`
+            : `<button class="btn btn-primary" style="font-size:0.85rem;padding:0.4rem 0.9rem;" onclick="saveReq('${r.id}','${esc(r.dua)}','${esc(r.name)}')">Save to library</button>`}
+          <button class="btn btn-ghost" style="font-size:0.85rem;padding:0.4rem 0.9rem;" onclick="dismissReq('${r.id}')">Dismiss</button>
         </div>` : '';
       return `
-        <div class="request-card">
+        <div class="request-card" id="req-${r.id}">
           <div class="requester-name">${esc(r.name)}</div>
           <div class="request-dua">${esc(r.dua)}</div>
-          <p class="text-subtle text-sm mt-1">${new Date(r.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</p>
+          <p class="text-subtle text-sm mt-1">${new Date(r.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</p>
           ${actions}
         </div>`;
     }).join('');
 }
 
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function renderNotFound() {
+  document.getElementById('list-title').textContent = 'Link not found';
+  document.getElementById('list-sub').textContent = 'This link may have been deleted or hasn\'t been set up yet.';
+  document.getElementById('divider').style.display = 'none';
 }
 
-function saveRequest(idx) {
-  const list = Sharing.getList(listId);
-  const r = list?.requests[idx];
-  if (!r) return;
-  Library.addCustom({
-    custom_text: r.dua,
-    label: r.name,
-    fromSharing: true,
-    categories: ['general']
-  });
+async function submitRequest() {
+  const name = document.getElementById('req-name').value.trim() || 'Anonymous';
+  const dua  = document.getElementById('req-dua').value.trim();
+  if (!dua) { showToast('Please write your dua request'); return; }
+
+  const ok = await Sharing.addRequest(listId, name, dua);
+  if (!ok) { showToast('Could not send — please try again'); return; }
+
+  // Show confirmation message
+  document.getElementById('submit-area').innerHTML = `
+    <div class="confirm-msg">
+      <p style="font-size:1.5rem;margin-bottom:0.5rem;">🤲</p>
+      <p style="font-weight:500;color:var(--accent-text);margin-bottom:0.4rem;">Your dua has been sent</p>
+      <p class="text-sm">We will make sure it reaches them — may Allah accept your dua and grant you what you've asked for. Ameen.</p>
+    </div>`;
+
+  // Refresh list data
+  listData = await Sharing.getList(listId);
+  const active = listData.requests.filter(r => !r.dismissed);
+  document.getElementById('list-sub').textContent = `${active.length} dua request${active.length !== 1 ? 's' : ''} waiting`;
+  document.getElementById('divider').style.display = '';
+  const listEl = document.getElementById('requests-list');
+  listEl.innerHTML = `<p class="text-muted text-sm mb-2" style="font-weight:500;">All requests (${active.length})</p>` +
+    active.map(r => `
+      <div class="request-card">
+        <div class="requester-name">${esc(r.name)}</div>
+        <div class="request-dua">${esc(r.dua)}</div>
+        <p class="text-subtle text-sm mt-1">${new Date(r.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</p>
+      </div>`).join('');
+}
+
+async function saveReq(requestId, dua, name) {
+  Library.addCustom({ custom_text: dua, label: name, fromSharing: true, categories: ['general'] });
+  await Sharing.markSaved(requestId);
+  listData = await Sharing.getList(listId);
   showToast('Saved to your library 🤲');
   render();
 }
 
-function dismissReq(idx) {
-  Sharing.dismissRequest(listId, idx);
+async function dismissReq(requestId) {
+  await Sharing.dismissRequest(requestId);
+  listData = await Sharing.getList(listId);
   showToast('Request dismissed');
-  render();
-}
-
-function submitRequest() {
-  const name = document.getElementById('req-name').value.trim() || 'Anonymous';
-  const dua = document.getElementById('req-dua').value.trim();
-  if (!dua) { showToast('Please write your dua request'); return; }
-  Sharing.addRequest(listId, name, dua);
-  document.getElementById('req-name').value = '';
-  document.getElementById('req-dua').value = '';
-  showToast('Your request has been sent 🤲 Jazakallah khayran');
   render();
 }
 </script>
