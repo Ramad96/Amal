@@ -41,8 +41,8 @@ const Sharing = (() => {
   }
 
   function getShareUrl(id) {
-    const base = location.origin + getBasePath();
-    return base + 'pages/share-view.html?id=' + id;
+    const dir = location.href.split('?')[0].replace(/[^/]+$/, '');
+    return dir + 'share-view.html?id=' + id;
   }
 
   function deleteList(id) {
