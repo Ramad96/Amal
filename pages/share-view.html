@@ -169,6 +169,22 @@ function renderNotFound() {
   document.getElementById('divider').style.display = 'none';
 }
 
+function showRequestForm() {
+  document.getElementById('submit-area').innerHTML = `
+    <div class="card" id="request-form">
+      <h3 style="margin-bottom:0.75rem;">Send a dua request</h3>
+      <div class="field">
+        <label>Your name (optional)</label>
+        <input type="text" id="req-name" placeholder="Anonymous">
+      </div>
+      <div class="field">
+        <label>Your dua request</label>
+        <textarea id="req-dua" placeholder="e.g. Please make dua for my mother's health…"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="submitRequest()">Send request 🤲</button>
+    </div>`;
+}
+
 async function submitRequest() {
   const name = document.getElementById('req-name').value.trim() || 'Anonymous';
   const dua  = document.getElementById('req-dua').value.trim();
@@ -183,6 +199,7 @@ async function submitRequest() {
       <p style="font-size:1.5rem;margin-bottom:0.5rem;">🤲</p>
       <p style="font-weight:500;color:var(--accent-text);margin-bottom:0.4rem;">Your dua has been sent</p>
       <p class="text-sm">We will make sure it reaches them — may Allah accept your dua and grant you what you've asked for. Ameen.</p>
+      <button class="btn btn-ghost" style="margin-top:0.75rem;" onclick="showRequestForm()">Send another</button>
     </div>`;
 
   // Refresh list data
@@ -201,7 +218,7 @@ async function submitRequest() {
 }
 
 async function saveReq(requestId, dua, name) {
-  Library.addCustom({ custom_text: dua, label: name, fromSharing: true, categories: ['general'] });
+  Library.addCustom({ custom_text: dua, translation: dua, arabic: '', label: name, shareListLabel: listData?.label || 'Shared Link', fromSharing: true, categories: ['general'] });
   await Sharing.markSaved(requestId);
   listData = await Sharing.getList(listId);
   showToast('Saved to your library 🤲');

@@ -92,11 +92,12 @@ function render(dua) {
 
   document.getElementById('content').innerHTML = `
     <div class="dua-full">
-      <div class="arabic" style="margin-bottom:1rem;">${dua.arabic}</div>
-      <div class="transliteration" style="margin-bottom:1rem;">${dua.transliteration}</div>
-      <p style="font-size:1rem;color:var(--text);line-height:1.75;">${dua.translation}</p>
+      ${dua.arabic ? `<div class="arabic" style="margin-bottom:1rem;">${dua.arabic}</div>` : ''}
+      ${dua.transliteration ? `<div class="transliteration" style="margin-bottom:1rem;">${dua.transliteration}</div>` : ''}
+      ${dua.translation || dua.custom_text ? `<p style="font-size:1rem;color:var(--text);line-height:1.75;">${dua.translation || dua.custom_text}</p>` : ''}
       ${dua.occasion ? `<p class="text-sm text-muted mt-2"><strong>Occasion:</strong> ${dua.occasion}</p>` : ''}
-      <p class="source-tag mt-2">Source: ${dua.source}</p>
+      ${dua.source ? `<p class="source-tag mt-2">Source: ${dua.source}</p>` : ''}
+      ${dua.fromSharing ? `<p class="text-sm text-muted mt-2">🤲 Requested by ${dua.label || 'Anonymous'} · <em>${dua.shareListLabel || 'Shared Link'}</em></p>` : ''}
       <div class="dua-meta mt-2">${cats}</div>
     </div>
 
@@ -149,8 +150,12 @@ function unmarkAnswered(id) {
 
 function copyDua() {
   const d = window._currentDua;
-  const text = `${d.arabic}\n\n${d.transliteration}\n\n${d.translation}\n\nSource: ${d.source}`;
-  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard'));
+  const parts = [];
+  if (d.arabic) parts.push(d.arabic);
+  if (d.transliteration) parts.push(d.transliteration);
+  if (d.translation || d.custom_text) parts.push(d.translation || d.custom_text);
+  if (d.source) parts.push('Source: ' + d.source);
+  navigator.clipboard.writeText(parts.join('\n\n')).then(() => showToast('Copied to clipboard'));
 }
 </script>
 </body>

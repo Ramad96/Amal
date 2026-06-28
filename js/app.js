@@ -2,7 +2,7 @@
    Amal — Core App
 ================================ */
 
-window.AMAL_VERSION = 'v6';
+window.AMAL_VERSION = 'v6.4';
 
 // Register service worker
 if ('serviceWorker' in navigator) {
