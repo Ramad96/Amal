@@ -17,6 +17,7 @@ const Library = (() => {
     if (!all[dua.id]) {
       all[dua.id] = { ...dua, savedAt: Date.now(), answered: false };
       localStorage.setItem(KEY, JSON.stringify(all));
+      window.CloudSync?.push(all[dua.id]);
     }
     return all[dua.id];
   }
@@ -25,6 +26,7 @@ const Library = (() => {
     const all = getAll();
     delete all[id];
     localStorage.setItem(KEY, JSON.stringify(all));
+    window.CloudSync?.remove(id);
   }
 
   function isSaved(id) {
@@ -37,6 +39,7 @@ const Library = (() => {
       all[id].answered = true;
       all[id].answeredAt = Date.now();
       localStorage.setItem(KEY, JSON.stringify(all));
+      window.CloudSync?.push(all[id]);
     }
   }
 
@@ -46,6 +49,7 @@ const Library = (() => {
       all[id].answered = false;
       delete all[id].answeredAt;
       localStorage.setItem(KEY, JSON.stringify(all));
+      window.CloudSync?.push(all[id]);
     }
   }
 
@@ -58,6 +62,7 @@ const Library = (() => {
     const id = 'custom_' + uuid();
     all[id] = { ...dua, id, custom: true, savedAt: Date.now(), answered: false };
     localStorage.setItem(KEY, JSON.stringify(all));
+    window.CloudSync?.push(all[id]);
     return id;
   }
 
@@ -66,6 +71,7 @@ const Library = (() => {
     if (all[id]) {
       all[id] = { ...all[id], ...changes };
       localStorage.setItem(KEY, JSON.stringify(all));
+      window.CloudSync?.push(all[id]);
     }
   }
 
