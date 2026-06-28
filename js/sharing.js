@@ -45,13 +45,20 @@ const Sharing = (() => {
     return dir + 'share-view.html?id=' + id;
   }
 
+  function dismissRequest(listId, idx) {
+    const data = getList(listId);
+    if (!data || !data.requests[idx]) return;
+    data.requests[idx].dismissed = true;
+    localStorage.setItem('amal_share_' + listId, JSON.stringify(data));
+  }
+
   function deleteList(id) {
     localStorage.removeItem('amal_share_' + id);
     const mine = getMyIds().filter(i => i !== id);
     localStorage.setItem(MY_KEY, JSON.stringify(mine));
   }
 
-  return { createList, getList, getMyIds, getMyLists, addRequest, getShareUrl, deleteList };
+  return { createList, getList, getMyIds, getMyLists, addRequest, getShareUrl, dismissRequest, deleteList };
 })();
 
 window.Sharing = Sharing;

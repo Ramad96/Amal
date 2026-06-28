@@ -42,6 +42,7 @@
   <div class="flex justify-between items-center mb-2">
     <div class="chips" id="lib-tabs" style="margin-bottom:0;">
       <button class="chip active" onclick="switchTab('active', this)">Active</button>
+      <button class="chip" onclick="switchTab('fromSharing', this)">From others</button>
       <button class="chip" onclick="switchTab('answered', this)">Answered</button>
     </div>
     <button class="btn btn-ghost text-sm" onclick="toggleAddForm()" id="add-btn">+ Add dua</button>
@@ -94,13 +95,21 @@ document.addEventListener('DOMContentLoaded', render);
 window.addEventListener('amal:synced', render);
 
 function render() {
-  const items = currentTab === 'active' ? Library.listActive() : Library.listAnswered();
+  let items;
+  if (currentTab === 'active') items = Library.listActive();
+  else if (currentTab === 'answered') items = Library.listAnswered();
+  else items = Library.listActive().filter(d => d.fromSharing);
+
   const list = document.getElementById('list');
 
   if (!items.length) {
-    list.innerHTML = currentTab === 'active'
-      ? `<div class="empty"><h3>No saved duas yet</h3><p>Browse prophetic duas and save the ones you want to keep close.</p><a href="browse.html" class="btn mt-2">Browse duas</a></div>`
-      : `<div class="empty"><h3>No answered duas yet</h3><p>When Allah answers a dua, mark it here as a reminder of His mercy.</p></div>`;
+    if (currentTab === 'active') {
+      list.innerHTML = `<div class="empty"><h3>No saved duas yet</h3><p>Browse prophetic duas and save the ones you want to keep close.</p><a href="browse.html" class="btn mt-2">Browse duas</a></div>`;
+    } else if (currentTab === 'fromSharing') {
+      list.innerHTML = `<div class="empty"><h3>No requests saved yet</h3><p>Save dua requests from your sharing link and they'll appear here.</p><a href="share.html" class="btn mt-2">View sharing</a></div>`;
+    } else {
+      list.innerHTML = `<div class="empty"><h3>No answered duas yet</h3><p>When Allah answers a dua, mark it here as a reminder of His mercy.</p></div>`;
+    }
     return;
   }
 
@@ -114,7 +123,7 @@ function render() {
             ${d.arabic ? `<div class="dua-arabic" style="font-size:1.1rem;line-height:1.8;">${d.arabic}</div>` : ''}
             ${d.custom_text ? `<p style="color:var(--text);font-size:0.95rem;">${d.custom_text}</p>` : ''}
             <p class="text-sm text-muted mt-1" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${preview}</p>
-            ${d.label ? `<span class="tag muted mt-1">${d.label}</span>` : ''}
+            ${d.fromSharing ? `<span class="tag amber mt-1">🤲 ${d.label || 'From others'}</span>` : d.label ? `<span class="tag muted mt-1">${d.label}</span>` : ''}
             ${isAnswered && d.answeredAt ? `<p class="text-subtle text-sm mt-1">Answered ${new Date(d.answeredAt).toLocaleDateString()}</p>` : ''}
           </div>
           <div style="display:flex;flex-direction:column;gap:0.4rem;align-items:flex-end;">

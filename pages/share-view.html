@@ -17,6 +17,7 @@
     .request-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.1rem; margin-bottom:0.65rem; }
     .requester-name { font-weight:500; font-size:0.95rem; }
     .request-dua { color:var(--text-muted); font-size:0.9rem; margin-top:0.3rem; line-height:1.6; }
+    .request-actions { display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap; }
   </style>
 </head>
 <body>
@@ -28,7 +29,7 @@
     <p id="list-sub" class="text-muted">Loading…</p>
   </div>
 
-  <!-- Add a request form -->
+  <!-- Add a request form (hidden for owner) -->
   <div class="card" id="request-form">
     <h3 style="margin-bottom:0.75rem;">Send a dua request</h3>
     <div class="field">
@@ -66,7 +67,7 @@
     <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
     Browse
   </a>
-  <a href="share.html">
+  <a href="share.html" class="active">
     <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
     Sharing
   </a>
@@ -74,14 +75,21 @@
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
     Settings
   </a>
+  <button id="nav-auth-btn" class="nav-auth"></button>
 </nav>
 
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/supabase-config.js"></script>
 <script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sync.js"></script>
+<script src="../js/library.js"></script>
 <script src="../js/sharing.js"></script>
 <script>
 let listId = null;
+let isOwner = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(location.search);
@@ -92,6 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('request-form').style.display = 'none';
     return;
   }
+  isOwner = Sharing.getMyIds().includes(listId);
+  if (isOwner) document.getElementById('request-form').style.display = 'none';
   render();
 });
 
@@ -106,27 +116,64 @@ function render() {
 
   document.title = list.label + ' — Amal';
   document.getElementById('list-title').textContent = list.label;
-  document.getElementById('list-sub').textContent = list.requests.length
-    ? `${list.requests.length} dua request${list.requests.length !== 1 ? 's' : ''} waiting`
-    : 'No requests yet — be the first to send one';
+
+  const active = list.requests.filter(r => !r.dismissed);
+  document.getElementById('list-sub').textContent = active.length
+    ? `${active.length} dua request${active.length !== 1 ? 's' : ''} waiting`
+    : isOwner ? 'No requests yet — share your link to receive duas' : 'No requests yet — be the first to send one';
 
   const el = document.getElementById('requests-list');
-  if (!list.requests.length) { el.innerHTML = ''; return; }
+  if (!active.length) { el.innerHTML = ''; return; }
 
-  el.innerHTML = `<p class="text-muted text-sm mb-2" style="font-weight:500;">All requests (${list.requests.length})</p>` +
-    list.requests.map(r => `
-      <div class="request-card">
-        <div class="requester-name">${r.name}</div>
-        <div class="request-dua">${r.dua}</div>
-        <p class="text-subtle text-sm mt-1">${new Date(r.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</p>
-      </div>`).join('');
+  el.innerHTML = (isOwner ? `<p class="text-muted text-sm mb-2" style="font-weight:500;">Tap a request to save it to your library</p>` : `<p class="text-muted text-sm mb-2" style="font-weight:500;">All requests (${active.length})</p>`) +
+    active.map((r, visualIdx) => {
+      const realIdx = list.requests.indexOf(r);
+      const alreadySaved = Library.list().some(d => d.fromSharing && d.custom_text === r.dua && d.label === r.name);
+      const actions = isOwner ? `
+        <div class="request-actions">
+          ${alreadySaved
+            ? `<span class="tag" style="padding:0.4rem 0.9rem;">✓ Saved</span>`
+            : `<button class="btn btn-primary" style="font-size:0.85rem;padding:0.4rem 0.9rem;" onclick="saveRequest(${realIdx})">Save to library</button>`}
+          <button class="btn btn-ghost" style="font-size:0.85rem;padding:0.4rem 0.9rem;" onclick="dismissReq(${realIdx})">Dismiss</button>
+        </div>` : '';
+      return `
+        <div class="request-card">
+          <div class="requester-name">${esc(r.name)}</div>
+          <div class="request-dua">${esc(r.dua)}</div>
+          <p class="text-subtle text-sm mt-1">${new Date(r.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</p>
+          ${actions}
+        </div>`;
+    }).join('');
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function saveRequest(idx) {
+  const list = Sharing.getList(listId);
+  const r = list?.requests[idx];
+  if (!r) return;
+  Library.addCustom({
+    custom_text: r.dua,
+    label: r.name,
+    fromSharing: true,
+    categories: ['general']
+  });
+  showToast('Saved to your library 🤲');
+  render();
+}
+
+function dismissReq(idx) {
+  Sharing.dismissRequest(listId, idx);
+  showToast('Request dismissed');
+  render();
 }
 
 function submitRequest() {
   const name = document.getElementById('req-name').value.trim() || 'Anonymous';
   const dua = document.getElementById('req-dua').value.trim();
   if (!dua) { showToast('Please write your dua request'); return; }
-
   Sharing.addRequest(listId, name, dua);
   document.getElementById('req-name').value = '';
   document.getElementById('req-dua').value = '';
