@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dua — Amal</title>
+  <meta name="theme-color" content="#A0601A">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lateef:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .dua-full { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1rem; }
+    .source-tag { font-size: 0.78rem; color: var(--text-subtle); font-family: var(--font-ui); }
+    .action-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.25rem; }
+    .back-btn { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text-muted); font-size: 0.9rem; text-decoration: none; margin-bottom: 1.25rem; font-family: var(--font-ui); }
+    .back-btn:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<main class="page">
+  <a class="back-btn" onclick="history.back()" href="#">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    Back
+  </a>
+
+  <div id="content">
+    <div class="empty"><p>Loading…</p></div>
+  </div>
+</main>
+
+<nav>
+  <a href="../index.html">
+    <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+    Home
+  </a>
+  <a href="browse.html">
+    <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    Browse
+  </a>
+  <a href="library.html">
+    <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+    Library
+  </a>
+  <a href="share.html">
+    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    Sharing
+  </a>
+  <a href="board.html">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    Board
+  </a>
+</nav>
+
+<div id="toast"></div>
+
+<script src="../js/app.js"></script>
+<script src="../js/library.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id') || sessionStorage.getItem('amal_dua_id');
+  if (!id) { history.back(); return; }
+
+  const duas = await loadDuas();
+  const libEntry = Library.getAll()[id];
+
+  let dua = duas.find(d => d.id === id) || libEntry;
+  if (!dua) { document.getElementById('content').innerHTML = `<div class="empty"><h3>Dua not found</h3></div>`; return; }
+
+  document.title = 'Dua — Amal';
+  render(dua);
+});
+
+function render(dua) {
+  const saved = Library.isSaved(dua.id);
+  const answered = Library.isAnswered(dua.id);
+  const cats = (dua.categories || []).map(c => `<span class="tag">${CATEGORIES[c]?.label || c}</span>`).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="dua-full">
+      <div class="arabic" style="margin-bottom:1rem;">${dua.arabic}</div>
+      <div class="transliteration" style="margin-bottom:1rem;">${dua.transliteration}</div>
+      <p style="font-size:1rem;color:var(--text);line-height:1.75;">${dua.translation}</p>
+      ${dua.occasion ? `<p class="text-sm text-muted mt-2"><strong>Occasion:</strong> ${dua.occasion}</p>` : ''}
+      <p class="source-tag mt-2">Source: ${dua.source}</p>
+      <div class="dua-meta mt-2">${cats}</div>
+    </div>
+
+    ${answered ? `<div class="card" style="background:var(--accent-light);border-color:var(--accent)">
+      <div class="flex items-center gap-1">
+        <span class="answered-badge">✓ Answered — Alhamdulillah</span>
+      </div>
+      <button class="btn btn-ghost mt-2 text-sm" onclick="unmarkAnswered('${dua.id}')">Undo</button>
+    </div>` : ''}
+
+    <div class="action-row">
+      ${saved ? `
+        ${!answered ? `<button class="btn btn-primary" onclick="markAnswered('${dua.id}')">✓ Mark as answered</button>` : ''}
+        <button class="btn" onclick="unsave('${dua.id}')">Remove from library</button>
+      ` : `
+        <button class="btn btn-primary" onclick="saveDua()">Save to library</button>
+      `}
+      <button class="btn" onclick="copyDua()">Copy</button>
+    </div>
+
+    <hr class="divider">
+    <p class="text-sm text-muted">Going on Umrah? <a href="share.html" style="color:var(--accent)">Create a sharing link</a> so others can send you duas to make on their behalf.</p>
+  `;
+
+  window._currentDua = dua;
+}
+
+async function saveDua() {
+  Library.save(window._currentDua);
+  showToast('Saved to your library');
+  render(window._currentDua);
+}
+
+function unsave(id) {
+  Library.remove(id);
+  showToast('Removed from library');
+  render(window._currentDua);
+}
+
+function markAnswered(id) {
+  Library.markAnswered(id);
+  showToast('Alhamdulillah 🌿');
+  render(window._currentDua);
+}
+
+function unmarkAnswered(id) {
+  Library.unmarkAnswered(id);
+  render(window._currentDua);
+}
+
+function copyDua() {
+  const d = window._currentDua;
+  const text = `${d.arabic}\n\n${d.transliteration}\n\n${d.translation}\n\nSource: ${d.source}`;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard'));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dua Requests — Amal</title>
+  <meta name="theme-color" content="#A0601A">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lateef:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=DM+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .pilgrim-hero { text-align:center; padding: 2.5rem 0 1.5rem; }
+    .kaaba-icon { font-size: 3rem; display:block; margin-bottom:0.75rem; }
+    .request-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.1rem; margin-bottom:0.65rem; }
+    .requester-name { font-weight:500; font-size:0.95rem; }
+    .request-dua { color:var(--text-muted); font-size:0.9rem; margin-top:0.3rem; line-height:1.6; }
+  </style>
+</head>
+<body>
+
+<main class="page">
+  <div class="pilgrim-hero">
+    <span class="kaaba-icon">🕋</span>
+    <h1 id="list-title">Dua Requests</h1>
+    <p id="list-sub" class="text-muted">Loading…</p>
+  </div>
+
+  <!-- Add a request form -->
+  <div class="card" id="request-form">
+    <h3 style="margin-bottom:0.75rem;">Send a dua request</h3>
+    <div class="field">
+      <label>Your name (optional)</label>
+      <input type="text" id="req-name" placeholder="Anonymous">
+    </div>
+    <div class="field">
+      <label>Your dua request</label>
+      <textarea id="req-dua" placeholder="e.g. Please make dua for my mother's health…"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="submitRequest()">Send request 🤲</button>
+  </div>
+
+  <hr class="divider">
+
+  <div id="requests-list"></div>
+
+  <p class="text-subtle text-sm text-center mt-3">
+    Powered by <a href="../index.html" style="color:var(--accent);text-decoration:none;">Amal</a>
+  </p>
+</main>
+
+<div id="toast"></div>
+
+<script src="../js/app.js"></script>
+<script src="../js/sharing.js"></script>
+<script>
+let listId = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(location.search);
+  listId = params.get('id');
+  if (!listId) {
+    document.getElementById('list-title').textContent = 'Link not found';
+    document.getElementById('list-sub').textContent = 'This sharing link is invalid.';
+    document.getElementById('request-form').style.display = 'none';
+    return;
+  }
+  render();
+});
+
+function render() {
+  const list = Sharing.getList(listId);
+  if (!list) {
+    document.getElementById('list-title').textContent = 'Link not found';
+    document.getElementById('list-sub').textContent = 'This link may have been deleted or hasn\'t been set up yet.';
+    document.getElementById('request-form').style.display = 'none';
+    return;
+  }
+
+  document.title = list.label + ' — Amal';
+  document.getElementById('list-title').textContent = list.label;
+  document.getElementById('list-sub').textContent = list.requests.length
+    ? `${list.requests.length} dua request${list.requests.length !== 1 ? 's' : ''} waiting`
+    : 'No requests yet — be the first to send one';
+
+  const el = document.getElementById('requests-list');
+  if (!list.requests.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `<p class="text-muted text-sm mb-2" style="font-weight:500;">All requests (${list.requests.length})</p>` +
+    list.requests.map(r => `
+      <div class="request-card">
+        <div class="requester-name">${r.name}</div>
+        <div class="request-dua">${r.dua}</div>
+        <p class="text-subtle text-sm mt-1">${new Date(r.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</p>
+      </div>`).join('');
+}
+
+function submitRequest() {
+  const name = document.getElementById('req-name').value.trim() || 'Anonymous';
+  const dua = document.getElementById('req-dua').value.trim();
+  if (!dua) { showToast('Please write your dua request'); return; }
+
+  Sharing.addRequest(listId, name, dua);
+  document.getElementById('req-name').value = '';
+  document.getElementById('req-dua').value = '';
+  showToast('Your request has been sent 🤲 Jazakallah khayran');
+  render();
+}
+</script>
+</body>
+</html>
